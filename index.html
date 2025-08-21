@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galerie Palafayette</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0;
+    font-family: 'Fredoka', sans-serif;
+    overflow-x: hidden;
+    background: #0a1931;
+    color: #fff;
+  }
+
+  canvas#bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+  }
+
+  .gallery {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    padding: 60px 20px;
+  }
+
+  .card {
+    position: relative;
+    width: 300px;
+    height: 200px;
+    background: linear-gradient(-45deg, #f89b29 0%, #ff0f7b 100%);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+  }
+
+  .card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+  }
+
+  .card__content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-5deg);
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: rgba(255,255,255,0.95);
+    opacity: 0;
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+    text-align: center;
+    border-radius: 15px;
+  }
+
+  /* état actif */
+  .card:hover img,
+  .card.active img {
+    scale: 1.1;
+    filter: blur(4px) brightness(0.7);
+  }
+
+  .card:hover .card__content,
+  .card.active .card__content {
+    transform: translate(-50%, -50%) rotate(0deg);
+    opacity: 1;
+  }
+
+  /* animation de fermeture fluide */
+  .card.closing .card__content {
+    opacity: 0 !important;
+    transform: translate(-50%, -50%) rotate(-5deg) scale(0.95);
+    transition: all 0.5s ease;
+  }
+
+  .card__title {
+    margin: 0;
+    font-size: 22px;
+    color: #111;
+    font-weight: 700;
+  }
+
+  .card__description {
+    margin: 10px 0 0;
+    font-size: 15px;
+    color: #333;
+    line-height: 1.4;
+  }
+
+  #timers {
+    position: fixed; bottom: 10px; width: 100%;
+    text-align: center; font-size: 20px; font-weight: bold;
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<div id="content">
+  <div class="gallery">
+    <div class="card">
+      <img src="1.jpg" alt="Image 1">
+      <div class="card__content">
+        <p class="card__title">Le soleil se couche</p>
+        <p class="card__description">Un magnifique coucher de soleil avec des nuages, capturé le 20/08/2025.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="timers">
+    <div><span class="label">memorial van damme :</span><span id="timer1"></span></div>
+    <div><span class="label">anniversaire :</span><span id="timer2"></span></div>
+    <div><span class="label">rentrée :</span><span id="timer3"></span></div>
+  </div>
+</div>
+
+<script>
+// --- Activer/désactiver les cartes au clic avec fermeture après 2s + animation ---
+document.querySelectorAll('.card').forEach(card => {
+  let timeoutId;
+
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.card').forEach(c => {
+      if(c !== card) {
+        c.classList.remove('active','closing');
+        if (c.timeoutId) clearTimeout(c.timeoutId);
+      }
+    });
+
+    card.classList.add('active');
+
+    if (timeoutId) clearTimeout(timeoutId);
+
+    timeoutId = setTimeout(() => {
+      card.classList.add('closing');
+      setTimeout(() => {
+        card.classList.remove('active','closing');
+      }, 500); // durée de l’anim de fermeture
+    }, 2000); // attente avant fermeture
+
+    card.timeoutId = timeoutId;
+  });
+});
+
+// --- Timers ---
+function updateTimer(target, id, msg){
+  const now = Date.now(), diff = target - now;
+  if(diff <= 0){ document.getElementById(id).textContent = msg; return; }
+  const d = Math.floor(diff / 86400000),
+        h = Math.floor((diff % 86400000) / 3600000),
+        m = Math.floor((diff % 3600000) / 60000),
+        s = Math.floor((diff % 60000) / 1000);
+  document.getElementById(id).textContent = `${d}j ${h}h ${m}m ${s}s`;
+}
+function startTimers(){
+  const t1 = new Date("2025-08-22T21:00:00").getTime();
+  const t2 = new Date("2025-08-26T00:00:00").getTime();
+  const t3 = new Date("2025-08-29T08:00:00").getTime();
+  setInterval(()=>{
+    updateTimer(t1,"timer1","memorial van damme");
+    updateTimer(t2,"timer2","anniversaire");
+    updateTimer(t3,"timer3","rentrée");
+  },1000);
+}
+startTimers();
+
+// --- Fond animé vagues ---
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let width, height;
+function resize(){ width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+resize();
+
+class Wave{
+  constructor(y, amplitude, length, speed, hue){
+    this.y = y;
+    this.amplitude = amplitude;
+    this.length = length;
+    this.speed = speed;
+    this.hue = hue;
+    this.offset = Math.random()*1000;
+  }
+  draw(t){
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+    for(let x=0;x<=width;x++){
+      const y = this.y + Math.sin((x/this.length)+t*this.speed+this.offset)*this.amplitude
+                     + Math.sin((x/this.length*0.5)+t*this.speed*1.5)*this.amplitude*0.3;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    const gradient = ctx.createLinearGradient(0, this.y-this.amplitude*1.2, 0, this.y+this.amplitude*1.2);
+    gradient.addColorStop(0, `hsla(${(this.hue + t*0.02)%360},70%,50%,0.5)`);
+    gradient.addColorStop(0.5, `hsla(${(this.hue + t*0.02 + 20)%360},85%,65%,0.5)`);
+    gradient.addColorStop(1, `hsla(${(this.hue + 180 + t*0.02)%360},60%,60%,0.5)`);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+  }
+}
+
+let waves = [
+  new Wave(height*0.3, 60, 250, 0.002, 200),
+  new Wave(height*0.45, 50, 200, 0.003, 260),
+  new Wave(height*0.6, 70, 300, 0.0015, 280),
+  new Wave(height*0.75, 80, 400, 0.0025, 320),
+];
+
+function animate(){
+  ctx.clearRect(0,0,width,height);
+  const t = Date.now();
+  waves.forEach(w => w.draw(t));
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+
+</body>
+</html>
